@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niyam Tracking System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs - IMPORTANT: Use the compat versions for older syntax if needed, or the modular SDKs for newer projects -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .active-page {
+            display: block;
+        }
+        .niyam-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .niyam-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .tab-button {
+            transition: all 0.3s;
+        }
+        .tab-button.active {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .chart-container {
+            background: linear-gradient(135deg, #e0f2fe 0%, #93c5fd 100%);
+        }
+        .record-view-toggle button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+        .record-view-toggle button.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="max-w-6xl mx-auto p-4 md:p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8 p-4 bg-white rounded-lg shadow-sm">
+            <div class="flex items-center">
+                <img src="https://placehold.co/40x40" alt="Temple icon with golden dome and intricate carvings" class="mr-3">
+                <h1 class="text-2xl font-bold text-indigo-900">Niyam Tracking System</h1>
+            </div>
+            <div class="flex space-x-1">
+                <button id="niyamListBtn" class="tab-button active px-4 py-2">Niyam List</button>
+                <button id="recordsBtn" class="tab-button px-4 py-2">Records</button>
+            </div>
+        </div>
+
+        <!-- Niyam List Page -->
+        <div id="niyamListPage" class="page active-page">
+            <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+                <h2 class="text-xl font-semibold mb-4">Submit Niyam</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Member ID</label>
+                        <input type="text" id="memberId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Floor (1-6)</label>
+                        <select id="floorSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select Floor</option>
+                            <option value="1">Floor 1</option>
+                            <option value="2">Floor 2</option>
+                            <option value="3">Floor 3</option>
+                            <option value="4">Floor 4</option>
+                            <option value="5">Floor 5</option>
+                            <option value="6">Floor 6</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <h3 class="text-lg font-medium mb-3">Enter Niyam Counts:</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Mantralekhan Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="mantralekhanCount" class="font-medium">मंत्रलेखन</label>
+                            <input type="number" id="mantralekhanCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                    
+                    <!-- Jap Mala Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="japMalaCount" class="font-medium">जप-माला</label>
+                            <input type="number" id="japMalaCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                    
+                    <!-- Dandwat Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="dandwatCount" class="font-medium">दंडवत</label>
+                            <input type="number" id="dandwatCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                    
+                    <!-- Pradakshina Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="pradakshinaCount" class="font-medium">प्रदक्षिणा</label>
+                            <input type="number" id="pradakshinaCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                    
+                    <!-- Sikshapatri Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="sikshapatriCount" class="font-medium">शिक्षापत्री श्लोक</label>
+                            <input type="number" id="sikshapatriCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                    
+                    <!-- Vachanamrutam Card -->
+                    <div class="niyam-card p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label for="vachanamrutamCount" class="font-medium">वचनामृतम्</label>
+                            <input type="number" id="vachanamrutamCount" min="0" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                        <!-- Removed image section -->
+                    </div>
+                </div>
+                
+                <button onclick="submitNiyams()" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition duration-300">
+                    Submit Niyam Counts
+                </button>
+            </div>
+        </div>
+
+        <!-- Records Page -->
+        <div id="recordsPage" class="page">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <h2 class="text-xl font-semibold mb-4 md:mb-0">Niyam Records</h2>
+                    
+                    <!-- View Toggle -->
+                    <div class="record-view-toggle bg-gray-100 p-1 rounded-lg flex space-x-1">
+                        <button id="viewByFloorBtn" class="active">View by Floor</button>
+                        <button id="viewByNiyamBtn">View by Niyam</button>
+                    </div>
+                </div>
+
+                <!-- Filters Row -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <!-- Floor Filter (always visible for now, but can be toggled) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                        <select id="recordFloorFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="all">All Floors</option>
+                            <option value="1">Floor 1</option>
+                            <option value="2">Floor 2</option>
+                            <option value="3">Floor 3</option>
+                            <option value="4">Floor 4</option>
+                            <option value="5">Floor 5</option>
+                            <option value="6">Floor 6</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Niyam Filter (always visible for now, but can be toggled) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Niyam</label>
+                        <select id="recordNiyamFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="all">All Niyams</option>
+                            <option value="mantralekhan">मंत्रलेखन</option>
+                            <option value="japMala">जप-माला</option>
+                            <option value="dandwat">दंडवत</option>
+                            <option value="pradakshina">प्रदक्षिणा</option>
+                            <option value="sikshapatri">शिक्षापत्री श्लोक</option>
+                            <option value="vachanamrutam">वचनामृतम्</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
+                        <select id="recordTimeFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="today">Today</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Member ID</label>
+                        <input type="text" id="recordMemberFilter" placeholder="Search member" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="chart-container p-4 rounded-lg mb-6">
+                    <canvas id="niyamChart" height="300"></canvas>
+                </div>
+                
+                <!-- Floor-wise / Niyam-wise Summary Cards -->
+                <div id="summaryCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <!-- These will be dynamically populated -->
+                </div>
+
+                <!-- Detailed Records Table -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium mb-3">Detailed Records</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niyam</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200" id="recordsTableBody">
+                                <!-- Data rows will be dynamically populated from Firebase -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration - REPLACE WITH YOUR ACTUAL CONFIGURATION FROM FIREBASE CONSOLE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const recordsCollection = db.collection('niyamRecords'); // This is the name of your Firestore collection
+
+        // Niyam translations for display
+        const niyamTranslations = {
+            'mantralekhan': 'मंत्रलेखन',
+            'japMala': 'जप-माला',
+            'dandwat': 'दंडवत',
+            'pradakshina': 'प्रदक्षिणा',
+            'sikshapatri': 'शिक्षापत्री श्लोक',
+            'vachanamrutam': 'वचनामृतम्'
+        };
+
+        // Chart instance
+        let niyamChart;
+
+        // Page Navigation
+        document.getElementById('niyamListBtn').addEventListener('click', function() {
+            document.getElementById('niyamListBtn').classList.add('active');
+            document.getElementById('recordsBtn').classList.remove('active');
+            document.getElementById('niyamListPage').classList.add('active-page');
+            document.getElementById('recordsPage').classList.remove('active-page');
+        });
+
+        document.getElementById('recordsBtn').addEventListener('click', function() {
+            document.getElementById('recordsBtn').classList.add('active');
+            document.getElementById('niyamListBtn').classList.remove('active');
+            document.getElementById('recordsPage').classList.add('active-page');
+            document.getElementById('niyamListPage').classList.remove('active-page');
+            fetchAndDisplayRecords(); // Fetch and display records when records page is opened
+        });
+
+        // Submit Niyams to Firebase
+        async function submitNiyams() {
+            const memberId = document.getElementById('memberId').value.trim();
+            const floor = document.getElementById('floorSelect').value;
+            
+            if (!memberId) {
+                alert('Please enter Member ID');
+                return;
+            }
+            
+            if (!floor) {
+                alert('Please select Floor');
+                return;
+            }
+
+            let submittedCount = 0;
+            const niyamTypes = ['mantralekhan', 'japMala', 'dandwat', 'pradakshina', 'sikshapatri', 'vachanamrutam'];
+            const now = new Date();
+            const dateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+            try {
+                for (const niyamType of niyamTypes) {
+                    const countInput = document.getElementById(`${niyamType}Count`);
+                    const count = parseInt(countInput.value);
+
+                    if (count > 0) {
+                        const newRecord = {
+                            date: dateString, // Store as YYYY-MM-DD string
+                            memberId: memberId,
+                            floor: floor,
+                            niyam: niyamType,
+                            count: count,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp() // Firestore server timestamp for ordering
+                        };
+                        await recordsCollection.add(newRecord); // Add document to Firestore
+                        submittedCount++;
+                    }
+                }
+                
+                if (submittedCount === 0) {
+                    alert('Please enter a count for at least one Niyam.');
+                    return;
+                }
+
+                alert(`Niyams submitted for Member ${memberId} on Floor ${floor}. Total ${submittedCount} niyams recorded.`);
+                
+                // Reset form
+                document.getElementById('memberId').value = '';
+                document.getElementById('floorSelect').value = '';
+                niyamTypes.forEach(niyamType => {
+                    document.getElementById(`${niyamType}Count`).value = '0';
+                });
+                // If the records page is active, refresh its display
+                if (document.getElementById('recordsPage').classList.contains('active-page')) {
+                    fetchAndDisplayRecords(); 
+                }
+            } catch (error) {
+                console.error("Error submitting niyams: ", error);
+                alert("Failed to submit niyams. Please check your Firebase setup and internet connection.");
+            }
+        }
+
+        // Record Page Logic
+        let currentView = 'floor'; // 'floor' or 'niyam'
+        let allRecords = []; // This array will now hold data fetched from Firebase
+
+        document.getElementById('viewByFloorBtn').addEventListener('click', () => {
+            currentView = 'floor';
+            document.getElementById('viewByFloorBtn').classList.add('active');
+            document.getElementById('viewByNiyamBtn').classList.remove('active');
+            updateRecordsDisplay();
+        });
+
+        document.getElementById('viewByNiyamBtn').addEventListener('click', () => {
+            currentView = 'niyam';
+            document.getElementById('viewByNiyamBtn').classList.add('active');
+            document.getElementById('viewByFloorBtn').classList.remove('active');
+            updateRecordsDisplay();
+        });
+
+        // Filter event listeners
+        document.getElementById('recordFloorFilter').addEventListener('change', updateRecordsDisplay);
+        document.getElementById('recordNiyamFilter').addEventListener('change', updateRecordsDisplay);
+        document.getElementById('recordTimeFilter').addEventListener('change', updateRecordsDisplay);
+        document.getElementById('recordMemberFilter').addEventListener('input', updateRecordsDisplay);
+
+        // Function to fetch records from Firebase
+        async function fetchAndDisplayRecords() {
+            try {
+                // Fetch documents, ordered by timestamp descending
+                const snapshot = await recordsCollection.orderBy('timestamp', 'desc').get();
+                allRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateRecordsDisplay(); // Update UI with fetched data
+            } catch (error) {
+                console.error("Error fetching records: ", error);
+                alert("Failed to load records from Firebase. Please check your console for details.");
+            }
+        }
+
+        function updateRecordsDisplay() {
+            let filteredRecords = [...allRecords]; // Start with all fetched data
+
+            // Apply filters
+            const floorFilter = document.getElementById('recordFloorFilter').value;
+            const niyamFilter = document.getElementById('recordNiyamFilter').value;
+            const timeFilter = document.getElementById('recordTimeFilter').value;
+            const memberFilter = document.getElementById('recordMemberFilter').value.toLowerCase();
+
+            if (floorFilter !== 'all') {
+                filteredRecords = filteredRecords.filter(record => record.floor === floorFilter);
+            }
+            if (niyamFilter !== 'all') {
+                filteredRecords = filteredRecords.filter(record => record.niyam === niyamFilter);
+            }
+            if (memberFilter) {
+                filteredRecords = filteredRecords.filter(record => record.memberId.toLowerCase().includes(memberFilter));
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(today.getDate() - 7);
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+
+            if (timeFilter === 'today') {
+                filteredRecords = filteredRecords.filter(record => {
+                    const recordDate = new Date(record.date); // Assuming record.date is 'YYYY-MM-DD'
+                    recordDate.setHours(0, 0, 0, 0);
+                    return recordDate.getTime() === today.getTime();
+                });
+            } else if (timeFilter === 'week') {
+                filteredRecords = filteredRecords.filter(record => {
+                    const recordDate = new Date(record.date);
+                    recordDate.setHours(0, 0, 0, 0);
+                    return recordDate.getTime() >= oneWeekAgo.getTime();
+                });
+            } else if (timeFilter === 'month') {
+                filteredRecords = filteredRecords.filter(record => {
+                    const recordDate = new Date(record.date);
+                    recordDate.setHours(0, 0, 0, 0);
+                    return recordDate.getTime() >= oneMonthAgo.getTime();
+                });
+            }
+
+            // Update Chart
+            updateChart(filteredRecords);
+
+            // Update Summary Cards and Detailed Table
+            updateSummaryCards(filteredRecords);
+            updateDetailedTable(filteredRecords);
+        }
+
+        function updateChart(records) {
+            if (niyamChart) {
+                niyamChart.destroy(); // Destroy existing chart before creating a new one
+            }
+
+            let labels = [];
+            let data = [];
+            let title = '';
+
+            if (currentView === 'floor') {
+                title = 'Total Niyam Counts by Floor';
+                const floorCounts = {};
+                for (let i = 1; i <= 6; i++) {
+                    floorCounts[i.toString()] = 0;
+                }
+                records.forEach(record => {
+                    floorCounts[record.floor] += record.count;
+                });
+                labels = Object.keys(floorCounts).sort((a, b) => parseInt(a) - parseInt(b)).map(f => `Floor ${f}`);
+                data = Object.values(floorCounts); // Data values are already sorted by floor number due to the labels sorting
+            } else { // currentView === 'niyam'
+                title = 'Total Niyam Counts by Niyam Type';
+                const niyamCounts = {};
+                Object.keys(niyamTranslations).forEach(key => niyamCounts[key] = 0); // Initialize all niyams to 0
+                records.forEach(record => {
+                    niyamCounts[record.niyam] += record.count;
+                });
+                labels = Object.keys(niyamCounts).map(key => niyamTranslations[key]);
+                data = Object.values(niyamCounts);
+            }
+
+            const backgroundColors = [
+                'rgba(102, 126, 234, 0.7)', // Indigo
+                'rgba(56, 178, 172, 0.7)',  // Teal
+                'rgba(237, 137, 54, 0.7)',  // Orange
+                'rgba(233, 30, 99, 0.7)',   // Pink
+                'rgba(156, 204, 101, 0.7)', // Light Green
+                'rgba(171, 71, 188, 0.7)'   // Purple
+            ];
+            const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+            niyamChart = new Chart(document.getElementById('niyamChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Count',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // Hide legend if only one dataset
+                        },
+                        title: {
+                            display: true,
+                            text: title,
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1 // Ensure integer steps for counts
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSummaryCards(records) {
+            const container = document.getElementById('summaryCardsContainer');
+            container.innerHTML = ''; // Clear previous cards
+
+            if (currentView === 'floor') {
+                const floorSummaries = {};
+                for (let i = 1; i <= 6; i++) {
+                    floorSummaries[i.toString()] = { totalCount: 0, niyams: {} };
+                }
+
+                records.forEach(record => {
+                    if (!floorSummaries[record.floor].niyams[record.niyam]) {
+                        floorSummaries[record.floor].niyams[record.niyam] = 0;
+                    }
+                    floorSummaries[record.floor].niyams[record.niyam] += record.count;
+                    floorSummaries[record.floor].totalCount += record.count;
+                });
+
+                Object.keys(floorSummaries).sort((a, b) => parseInt(a) - parseInt(b)).forEach(floorNum => {
+                    const summary = floorSummaries[floorNum];
+                    if (summary.totalCount > 0) { // Only show floors with data
+                        const card = document.createElement('div');
+                        card.className = `bg-blue-50 p-4 rounded-lg border border-blue-100`; // Use dynamic colors if needed
+                        
+                        let niyamDetails = '';
+                        Object.keys(summary.niyams).forEach(niyamKey => {
+                            niyamDetails += `<p class="text-sm text-blue-600"><span class="font-medium">${niyamTranslations[niyamKey]}:</span> ${summary.niyams[niyamKey]}</p>`;
+                        });
+
+                        card.innerHTML = `
+                            <h4 class="font-medium text-blue-800 mb-2">Floor ${floorNum} Summary (Total: ${summary.totalCount})</h4>
+                            ${niyamDetails}
+                        `;
+                        container.appendChild(card);
+                    }
+                });
+
+            } else { // currentView === 'niyam'
+                const niyamSummaries = {};
+                Object.keys(niyamTranslations).forEach(key => niyamSummaries[key] = { totalCount: 0, floors: {} });
+
+                records.forEach(record => {
+                    if (!niyamSummaries[record.niyam].floors[record.floor]) {
+                        niyamSummaries[record.niyam].floors[record.floor] = 0;
+                    }
+                    niyamSummaries[record.niyam].floors[record.floor] += record.count;
+                    niyamSummaries[record.niyam].totalCount += record.count;
+                });
+
+                Object.keys(niyamSummaries).forEach(niyamKey => {
+                    const summary = niyamSummaries[niyamKey];
+                    if (summary.totalCount > 0) { // Only show niyams with data
+                        const card = document.createElement('div');
+                        card.className = `bg-purple-50 p-4 rounded-lg border border-purple-100`; // Use dynamic colors
+                        
+                        let floorDetails = '';
+                        Object.keys(summary.floors).sort((a, b) => parseInt(a) - parseInt(b)).forEach(floorNum => {
+                            floorDetails += `<p class="text-sm text-purple-600"><span class="font-medium">Floor ${floorNum}:</span> ${summary.floors[floorNum]}</p>`;
+                        });
+
+                        card.innerHTML = `
+                            <h4 class="font-medium text-purple-800 mb-2">${niyamTranslations[niyamKey]} Summary (Total: ${summary.totalCount})</h4>
+                            ${floorDetails}
+                        `;
+                        container.appendChild(card);
+                    }
+                });
+            }
+        }
+
+        function updateDetailedTable(records) {
+            const tbody = document.getElementById('recordsTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No records found for the selected filters.</td></tr>`;
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50'; // Add hover effect
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.memberId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.floor}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${niyamTranslations[record.niyam]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.count}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initial display when page loads - fetch records from Firebase
+        fetchAndDisplayRecords();
+    </script>
+</body>
+</html>
